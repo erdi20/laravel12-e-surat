@@ -16,6 +16,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\ImageColumn;
@@ -25,15 +26,19 @@ use Filament\Tables;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Directory;
 
 class IncomingLetterResource extends Resource
 {
     protected static ?string $model = IncomingLetter::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Manajemen Dokumen';
+
+    protected static ?string $navigationIcon = 'heroicon-o-inbox';
 
     protected static ?string $label = 'Surat Masuk';
+    protected static ?string $navigationLabel = 'Surat Masuk';
 
     public static function form(Form $form): Form
     {
@@ -48,7 +53,12 @@ class IncomingLetterResource extends Resource
                                     ->label('Nomor Surat')
                                     ->required()
                                     ->maxLength(255)
-                                    ->placeholder('Contoh: 123/IX/2023'),
+                                    ->placeholder('Contoh: 123/IX/2023')
+                                    ->live(onBlur: true)  // Penting! Agar nilai diperbarui saat kolom kehilangan fokus
+                                    ->afterStateHydrated(function ($state, $component) {
+                                        // Tidak perlu melakukan apa-apa di sini, tapi
+                                        // ini menunjukkan bahwa nilai sudah tersedia.
+                                    }),
                                 DatePicker::make('incoming_date')
                                     ->label('Tanggal Surat Masuk')
                                     ->default(now())
@@ -78,7 +88,13 @@ class IncomingLetterResource extends Resource
                             ->pdfDisplayPage(1)
                             ->pdfToolbar(true)
                             ->pdfZoomLevel(100)
-                            ->pdfNavPanes(true),
+                            ->pdfNavPanes(true)
+                            ->getUploadedFileNameForStorageUsing(function (Get $get, $file) {
+                                $letterNumber = $get('letter_number');
+                                $extension = $file->getClientOriginalExtension();
+                                $safeLetterNumber = Str::slug($letterNumber);
+                                return $safeLetterNumber . '.' . $extension;
+                            })
                     ]),
                 Hidden::make('user_id')
                     ->default(fn() => auth()->id()),
