@@ -7,7 +7,9 @@ use App\Filament\Resources\LetterRequestResource\RelationManagers;
 use App\Models\LetterRequest;
 use App\Models\OutgoingLetter;
 use Asmit\FilamentUpload\Forms\Components\AdvancedFileUpload;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
@@ -15,14 +17,19 @@ use Filament\Forms;
 use Filament\Tables;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Str;
 
 class LetterRequestResource extends Resource
 {
     protected static ?string $model = LetterRequest::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Manajemen Dokumen';
+
+    protected static ?string $navigationIcon = 'heroicon-o-document-plus';
 
     protected static ?string $label = 'Permohonan Surat';
+
+    protected static ?string $navigationLabel = 'Permohonan Surat';
 
     public static function form(Form $form): Form
     {
@@ -52,12 +59,9 @@ class LetterRequestResource extends Resource
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
-                // Kolom ini disembunyikan dari user karena diisi otomatis
                 Forms\Components\Hidden::make('user_id')
                     ->default(auth()->id()),
-                // Kolom ini disembunyikan dari user karena hanya untuk admin
                 Forms\Components\Hidden::make('outgoing_letter_id'),
-                // Kolom ini disembunyikan dari user karena diisi otomatis
                 Forms\Components\Hidden::make('status')
                     ->default('Menunggu'),
             ]);
@@ -65,8 +69,6 @@ class LetterRequestResource extends Resource
 
     public static function canCreate(): bool
     {
-        // Ganti 'is_admin' dengan nama kolom atau metode yang Anda gunakan
-        // untuk mengecek apakah user adalah admin
         return auth()->user()->user_type !== 'admin';
     }
 
@@ -109,43 +111,53 @@ class LetterRequestResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Action::make('buatSuratKeluar')
-                    ->label('Buat Surat Keluar')
-                    ->visible(fn(LetterRequest $record) => $record->status === 'Menunggu')
-                    ->form([
-                        Forms\Components\TextInput::make('letter_number')
-                            ->required(),
-                        Forms\Components\DatePicker::make('outgoing_date')
-                            ->default(now())
-                            ->required(),
-                        AdvancedFileUpload::make('file_path')
-                            ->label('File Surat')
-                            ->acceptedFileTypes(['application/pdf'])
-                            ->disk('public')
-                            ->directory('outgoing_letters')
-                            ->required(),
-                        Forms\Components\Hidden::make('user_id')
-                            ->default(auth()->id()),
-                    ])
-                    ->action(function (array $data, LetterRequest $record) {
-                        // 1. Buat record baru di SuratKeluar
-                        $suratKeluar = OutgoingLetter::create([
-                            'letter_number' => $data['letter_number'],
-                            'outgoing_date' => $data['outgoing_date'],
-                            'subject' => $record->subject,
-                            'recipient' => $record->user->name,
-                            'user_id' => $data['user_id'],
-                            'file_path' => $data['file_path'],
-                        ]);
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                    Action::make('buatSuratKeluar')
+                        ->label('Buat Surat Keluar')
+                        ->visible(fn(LetterRequest $record) => $record->status === 'Menunggu')
+                        ->form([
+                            Forms\Components\TextInput::make('letter_number')
+                                ->required()
+                                ->live(onBlur: true)
+                                ->afterStateHydrated(function ($state, $component) {}),
+                            Forms\Components\DatePicker::make('outgoing_date')
+                                ->default(now())
+                                ->required(),
+                            AdvancedFileUpload::make('file_path')
+                                ->label('File Surat')
+                                ->acceptedFileTypes(['application/pdf'])
+                                ->disk('public')
+                                ->directory('outgoing_letters')
+                                ->required()
+                                ->getUploadedFileNameForStorageUsing(function (Get $get, $file) {
+                                    $letterNumber = $get('letter_number');
+                                    $extension = $file->getClientOriginalExtension();
+                                    $safeLetterNumber = Str::slug($letterNumber);
+                                    return $safeLetterNumber . '.' . $extension;
+                                }),
+                            Forms\Components\Hidden::make('user_id')
+                                ->default(auth()->id()),
+                        ])
+                        ->action(function (array $data, LetterRequest $record) {
+                            // 1. Buat record baru di SuratKeluar
+                            $suratKeluar = OutgoingLetter::create([
+                                'letter_number' => $data['letter_number'],
+                                'outgoing_date' => $data['outgoing_date'],
+                                'subject' => $record->subject,
+                                'recipient' => $record->user->name,
+                                'user_id' => $data['user_id'],
+                                'file_path' => $data['file_path'],
+                            ]);
 
-                        // 2. Update record LetterRequest
-                        $record->update([
-                            'outgoing_letters_id' => $suratKeluar->id,
-                            'status' => 'Selesai',
-                        ]);
-                    }),
+                            // 2. Update record LetterRequest
+                            $record->update([
+                                'outgoing_letters_id' => $suratKeluar->id,
+                                'status' => 'Selesai',
+                            ]);
+                        }),
+                ])
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
