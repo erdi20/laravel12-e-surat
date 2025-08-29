@@ -9,6 +9,7 @@ use App\Models\User;
 use Asmit\FilamentUpload\Forms\Components\AdvancedFileUpload;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -25,22 +26,18 @@ class OutgoingLetterResource extends Resource
     protected static ?string $model = OutgoingLetter::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
     protected static ?string $label = 'Surat Keluar';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                // Menggunakan Section untuk mengelompokkan informasi utama
                 Section::make('Informasi Surat')
                     ->description('Masukkan detail utama dari surat.')
                     ->schema([
-                        // Menggunakan Grid untuk mengatur layout 2 kolom
                         Grid::make(2)
                             ->schema([
-                                // Menggunakan Select untuk user_id agar bisa memilih nama
-                                Forms\Components\Hidden::make('user_id')
-                                    ->default(auth()->id()),
                                 TextInput::make('letter_number')
                                     ->label('Nomor Surat')
                                     ->required()
@@ -48,11 +45,8 @@ class OutgoingLetterResource extends Resource
                                     ->placeholder('Contoh: 123/A/2023'),
                                 DatePicker::make('outgoing_date')
                                     ->label('Tanggal Keluar')
-                                    ->default(now())  // Atur tanggal default ke hari ini
+                                    ->default(now())
                                     ->required(),
-                            ]),
-                        Grid::make(2)
-                            ->schema([
                                 TextInput::make('recipient')
                                     ->label('Penerima')
                                     ->required()
@@ -65,7 +59,6 @@ class OutgoingLetterResource extends Resource
                                     ->placeholder('Contoh: Undangan Rapat'),
                             ]),
                     ]),
-                // Section terpisah untuk upload file
                 Section::make('Unggah Dokumen')
                     ->description('Silakan unggah file PDF surat.')
                     ->schema([
@@ -73,10 +66,12 @@ class OutgoingLetterResource extends Resource
                             ->label('File PDF')
                             ->acceptedFileTypes(['application/pdf'])
                             ->directory('outgoing_letters')
-                            ->disk('public')  // Pastikan ini sesuai dengan konfigurasi Anda
+                            ->disk('public')
                             ->required()
                             ->placeholder('Tarik dan lepas file di sini atau klik untuk mengunggah.'),
                     ]),
+                Hidden::make('user_id')
+                    ->default(auth()->id()),
             ]);
     }
 
@@ -84,20 +79,22 @@ class OutgoingLetterResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user_id')
+                Tables\Columns\TextColumn::make('User.name')
+                    ->label('Pembuat')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('letter_number')
+                    ->label('Nomor Surat')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('subject')
+                    ->label('Perihal')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('recipient')
+                    ->label('Penerima')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('outgoing_date')
-                    ->date()
+                    ->label('Tanggal Keluar')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('file_path')
-                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

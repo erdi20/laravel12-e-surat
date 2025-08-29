@@ -26,6 +26,7 @@ class LetterRequest extends Model
 
     public function OutgoingLetter()
     {
-        return $this->belongsTo(OutgoingLetter::class);
+        // Tambahkan 'outgoing_letters_id' sebagai argumen kedua
+        return $this->belongsTo(OutgoingLetter::class, 'outgoing_letters_id');
     }
 }

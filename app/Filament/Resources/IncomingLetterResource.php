@@ -9,7 +9,12 @@ use Asmit\FilamentUpload\Enums\PdfViewFit;
 use Asmit\FilamentUpload\Forms\Components\AdvancedFileUpload;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
@@ -34,40 +39,49 @@ class IncomingLetterResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Card::make()
+                Section::make('Detail Surat Masuk')
+                    ->description('Lengkapi informasi mengenai surat yang Anda terima.')
                     ->schema([
-                        Forms\Components\TextInput::make('letter_number')
-                            ->label('Nomor Surat')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\DatePicker::make('incoming_date')
-                            ->label('Tanggal Surat Masuk')
-                            ->required(),
-                        Forms\Components\TextInput::make('sender')
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('letter_number')
+                                    ->label('Nomor Surat')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->placeholder('Contoh: 123/IX/2023'),
+                                DatePicker::make('incoming_date')
+                                    ->label('Tanggal Surat Masuk')
+                                    ->default(now())
+                                    ->required(),
+                            ]),
+                        TextInput::make('sender')
                             ->label('Pengirim')
                             ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('subject')
+                            ->maxLength(255)
+                            ->placeholder('Nama atau Instansi Pengirim'),
+                        TextInput::make('subject')
                             ->label('Perihal')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->placeholder('Contoh: Pemberitahuan Rapat Tahunan'),
+                    ]),
+                Section::make('Unggah Dokumen')
+                    ->description('Silakan unggah dokumen surat dalam format PDF.')
+                    ->schema([
                         AdvancedFileUpload::make('file_path')
-                            ->label('Upload PDF')
-                            ->directory('incoming_letters')
-                            ->pdfPreviewHeight(400)  // Customize preview height
-                            ->pdfDisplayPage(1)  // Set default page
-                            ->pdfToolbar(true)  // Enable toolbar
-                            ->pdfZoomLevel(100)  // Set zoom level
-                            ->pdfFitType(PdfViewFit::FIT)  // Set fit type
-                            ->pdfNavPanes(true)  // Enable navigation pane
+                            ->label('File PDF')
                             ->acceptedFileTypes(['application/pdf'])
                             ->directory('incoming_letters')
                             ->required()
-                            ->placeholder('Unggah file PDF di sini'),
-                        Forms\Components\Hidden::make('user_id')
-                            ->default(auth()->id()),
-                    ])
-                    ->columns(2),
+                            ->placeholder('Tarik dan lepas file di sini atau klik untuk mengunggah.')
+                            ->pdfPreviewHeight(400)
+                            ->pdfDisplayPage(1)
+                            ->pdfToolbar(true)
+                            ->pdfZoomLevel(100)
+                            ->pdfNavPanes(true),
+                    ]),
+                Hidden::make('user_id')
+                    ->default(fn() => auth()->id()),
             ]);
     }
 

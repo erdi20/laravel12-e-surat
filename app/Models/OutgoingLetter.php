@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Models\User;
 use App\Models\LetterRequest;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class OutgoingLetter extends Model
@@ -26,6 +26,7 @@ class OutgoingLetter extends Model
 
     public function LetterRequest()
     {
-        return $this->hasOne(LetterRequest::class);
+        // Tambahkan 'outgoing_letters_id' sebagai argumen kedua
+        return $this->hasOne(LetterRequest::class, 'outgoing_letters_id');
     }
 }
