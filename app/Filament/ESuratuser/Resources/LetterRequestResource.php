@@ -22,7 +22,13 @@ class LetterRequestResource extends Resource
 {
     protected static ?string $model = LetterRequest::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Layanan Anggota';
+
+    protected static ?string $navigationIcon = 'heroicon-o-document-plus';
+
+    protected static ?string $label = 'Permohonan Surat';
+
+    protected static ?string $navigationLabel = 'Permohonan Surat';
 
     public static function form(Form $form): Form
     {
@@ -84,22 +90,24 @@ class LetterRequestResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Action::make('download')
-                    ->label('Unduh Surat')
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->action(function (LetterRequest $record) {
-                        if ($record->OutgoingLetter) {
-                            return Storage::disk('public')->download($record->OutgoingLetter->file_path);
-                        }
-                        \Filament\Notifications\Notification::make()
-                            ->title('Gagal mengunduh')
-                            ->body('File surat tidak ditemukan.')
-                            ->danger()
-                            ->send();
-                    })
-                    ->visible(fn(LetterRequest $record) => $record->status === 'Selesai'),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                    Action::make('download')
+                        ->label('Unduh Surat')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->action(function (LetterRequest $record) {
+                            if ($record->OutgoingLetter) {
+                                return Storage::disk('public')->download($record->OutgoingLetter->file_path);
+                            }
+                            \Filament\Notifications\Notification::make()
+                                ->title('Gagal mengunduh')
+                                ->body('File surat tidak ditemukan.')
+                                ->danger()
+                                ->send();
+                        })
+                        ->visible(fn(LetterRequest $record) => $record->status === 'Selesai'),
+                ])
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
