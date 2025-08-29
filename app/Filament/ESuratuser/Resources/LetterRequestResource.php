@@ -47,23 +47,9 @@ class LetterRequestResource extends Resource
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
-                // Section::make('Unggah Dokumen')
-                //     ->description('Silakan unggah file PDF surat.')
-                //     ->schema([
-                //         AdvancedFileUpload::make('file_path')
-                //             ->label('File PDF')
-                //             ->acceptedFileTypes(['application/pdf'])
-                //             ->directory('outgoing_letters')
-                //             ->disk('public')
-                //             ->required()
-                //             ->placeholder('Tarik dan lepas file di sini atau klik untuk mengunggah.'),
-                //     ]),
                 // Kolom ini disembunyikan dari user karena diisi otomatis
                 Forms\Components\Hidden::make('user_id')
                     ->default(auth()->id()),
-                // Kolom ini disembunyikan dari user karena hanya untuk admin
-                Forms\Components\Hidden::make('outgoing_letter_id'),
-                // Kolom ini disembunyikan dari user karena diisi otomatis
                 Forms\Components\Hidden::make('status')
                     ->default('Menunggu'),
             ]);

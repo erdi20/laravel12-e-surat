@@ -27,7 +27,7 @@ class ESuratuserPanelProvider extends PanelProvider
             ->id('e-suratuser')
             ->path('e-suratuser')
             ->login()
-            ->collapsibleNavigationGroups()
+            ->sidebarCollapsibleOnDesktop()
             ->registration(RegisterUser::class)
             ->colors([
                 'primary' => Color::Amber,

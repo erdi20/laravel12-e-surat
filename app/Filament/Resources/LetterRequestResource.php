@@ -31,6 +31,11 @@ class LetterRequestResource extends Resource
                 Forms\Components\Section::make('Informasi Permintaan Surat')
                     ->description('Silakan isi detail permintaan surat Anda.')
                     ->schema([
+                        Forms\Components\Select::make('user_id')
+                            ->relationship('user', 'name')
+                            ->label('Nama Pemohon')
+                            ->placeholder('Contoh: Permohonan Peminjaman Ruang Rapat')
+                            ->required(),
                         Forms\Components\TextInput::make('subject')
                             ->label('Perihal Surat')
                             ->placeholder('Contoh: Permohonan Peminjaman Ruang Rapat')
@@ -58,6 +63,13 @@ class LetterRequestResource extends Resource
             ]);
     }
 
+    public static function canCreate(): bool
+    {
+        // Ganti 'is_admin' dengan nama kolom atau metode yang Anda gunakan
+        // untuk mengecek apakah user adalah admin
+        return auth()->user()->user_type !== 'admin';
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -75,7 +87,15 @@ class LetterRequestResource extends Resource
                 Tables\Columns\TextColumn::make('purpose')
                     ->label('Tujuan Surat')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('status'),
+                Tables\Columns\SelectColumn::make('status')
+                    ->label('Status')
+                    ->selectablePlaceholder('Pilih Status')
+                    ->options([
+                        'Menunggu' => 'Menunggu',
+                        'Diproses' => 'Diproses',
+                        'Selesai' => 'Selesai',
+                        'Ditolak' => 'Ditolak'
+                    ]),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -89,7 +109,7 @@ class LetterRequestResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Action::make('buatSuratKeluar')
                     ->label('Buat Surat Keluar')
