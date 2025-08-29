@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\OutgoingLetterResource\Pages;
 use App\Filament\Resources\OutgoingLetterResource\RelationManagers;
 use App\Models\OutgoingLetter;
-use App\Models\User;
 use Asmit\FilamentUpload\Forms\Components\AdvancedFileUpload;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
@@ -14,20 +13,28 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Filament\Forms;
 use Filament\Tables;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class OutgoingLetterResource extends Resource
 {
     protected static ?string $model = OutgoingLetter::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Manajemen Dokumen';
+
+    protected static ?string $navigationIcon = 'heroicon-o-paper-airplane';
 
     protected static ?string $label = 'Surat Keluar';
+
+    protected static ?string $navigationLabel = 'Surat Keluar';
 
     public static function form(Form $form): Form
     {
@@ -42,7 +49,9 @@ class OutgoingLetterResource extends Resource
                                     ->label('Nomor Surat')
                                     ->required()
                                     ->maxLength(255)
-                                    ->placeholder('Contoh: 123/A/2023'),
+                                    ->placeholder('Contoh: 123/A/2023')
+                                    ->live(onBlur: true)
+                                    ->afterStateHydrated(function ($state, $component) {}),
                                 DatePicker::make('outgoing_date')
                                     ->label('Tanggal Keluar')
                                     ->default(now())
@@ -68,7 +77,13 @@ class OutgoingLetterResource extends Resource
                             ->directory('outgoing_letters')
                             ->disk('public')
                             ->required()
-                            ->placeholder('Tarik dan lepas file di sini atau klik untuk mengunggah.'),
+                            ->placeholder('Tarik dan lepas file di sini atau klik untuk mengunggah.')
+                            ->getUploadedFileNameForStorageUsing(function (Get $get, $file) {
+                                $letterNumber = $get('letter_number');
+                                $extension = $file->getClientOriginalExtension();
+                                $safeLetterNumber = Str::slug($letterNumber);
+                                return $safeLetterNumber . '.' . $extension;
+                            }),
                     ]),
                 Hidden::make('user_id')
                     ->default(auth()->id()),
@@ -108,8 +123,17 @@ class OutgoingLetterResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                    Action::make('download')
+                        ->label('Unduh')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->action(function ($record) {
+                            return Storage::disk('public')->download($record->file_path);
+                        })
+                        ->visible(fn($record) => !empty($record->file_path))
+                ])
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
